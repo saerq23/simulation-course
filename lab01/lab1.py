@@ -1,89 +1,98 @@
-import numpy as np                      # Библиотека для математических вычислений
-import matplotlib.pyplot as plt         # Библиотека для построения графиков
-import tkinter as tk                    # Библиотека для создания графического интерфейса
-from tkinter import messagebox          # Модуль для вывода окон с ошибками
+import numpy as np
+import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import messagebox
 
-# ================= ФУНКЦИЯ МОДЕЛИРОВАНИЯ =================
-def simulate():                         # Функция вызывается при нажатии кнопки
 
-    try:                                # Блок перехвата ошибок (если введены не числа)
+def simulate_single(m, Cd, rho, S, v0, angle_deg, dt):
+    g = 9.81
+    k = Cd * rho * S / 2
+    angle = np.radians(angle_deg)
 
-        # ===== Получение параметров из интерфейса =====
-        m = float(entry_m.get())        # Получаем массу из поля ввода и преобразуем в float
-        Cd = float(entry_Cd.get())      # Получаем коэффициент сопротивления
-        rho = float(entry_rho.get())    # Получаем плотность воздуха
-        S = float(entry_S.get())        # Получаем площадь поперечного сечения
-        v0 = float(entry_v0.get())      # Получаем начальную скорость
-        angle_deg = float(entry_angle.get())  # Получаем угол в градусах
-        dt = float(entry_dt.get())      # Получаем шаг интегрирования
+    vx = v0 * np.cos(angle)
+    vy = v0 * np.sin(angle)
 
-        g = 9.81                        # Ускорение свободного падения
-        k = Cd * rho * S / 2            # Коэффициент сопротивления среды
+    x, y = 0, 0
+    xs, ys = [x], [y]
+    max_height = 0
 
-        angle = np.radians(angle_deg)   # Перевод угла из градусов в радианы
+    while y >= 0:
+        v = np.sqrt(vx**2 + vy**2)
 
-        # ===== Разложение начальной скорости на компоненты =====
-        vx = v0 * np.cos(angle)         # Горизонтальная составляющая скорости
-        vy = v0 * np.sin(angle)         # Вертикальная составляющая скорости
+        ax = -k/m * vx * v
+        ay = -g - k/m * vy * v
 
-        x, y = 0, 0                     # Начальные координаты
-        xs, ys = [x], [y]               # Списки для хранения траектории
-        max_height = 0                  # Переменная для максимальной высоты
+        vx += ax * dt
+        vy += ay * dt
 
-        # ===== Метод Эйлера =====
-        while y >= 0:                   # Пока тело не упало на землю
+        x += vx * dt
+        y += vy * dt
 
-            v = np.sqrt(vx**2 + vy**2)  # Модуль полной скорости
+        xs.append(x)
+        ys.append(y)
 
-            ax = -k/m * vx * v          # Ускорение по X (сопротивление)
-            ay = -g - k/m * vy * v      # Ускорение по Y (гравитация + сопротивление)
+        if y > max_height:
+            max_height = y
 
-            vx += ax * dt               # Обновление скорости по X
-            vy += ay * dt               # Обновление скорости по Y
+    final_speed = np.sqrt(vx**2 + vy**2)
 
-            x += vx * dt                # Обновление координаты X
-            y += vy * dt                # Обновление координаты Y
+    return xs, ys, x, max_height, final_speed
 
-            xs.append(x)                # Сохраняем точку X
-            ys.append(y)                # Сохраняем точку Y
 
-            if y > max_height:          # Проверяем максимальную высоту
-                max_height = y          # Обновляем максимум
+def simulate():
+    try:
+        m = float(entry_m.get())
+        Cd = float(entry_Cd.get())
+        rho = float(entry_rho.get())
+        S = float(entry_S.get())
+        v0 = float(entry_v0.get())
+        angle_deg = float(entry_angle.get())
 
-        final_speed = np.sqrt(vx**2 + vy**2)  # Скорость в момент падения
+        dt_values = entry_dt.get().split(",")
+        dt_values = [float(dt.strip()) for dt in dt_values]
 
-        # ===== Вывод результатов в интерфейс =====
-        result_label.config(            # Обновляем текст метки
-            text=f"Дальность: {round(x,2)} м\n"
-                 f"Макс высота: {round(max_height,2)} м\n"
-                 f"Конечная скорость: {round(final_speed,2)} м/с"
-        )
+        plt.figure()
 
-        
-        plt.figure()                    # Создание нового окна графика
-        plt.plot(xs, ys)                # Построение траектории
-        plt.xlabel("x (м)")             # Подпись оси X
-        plt.ylabel("y (м)")             # Подпись оси Y
-        plt.title("Траектория полёта")  # Заголовок графика
-        plt.grid()                      # Включаем сетку
-        plt.show()                      # Отображаем график
+        results_text = ""
 
-    except:                             # Если произошла ошибка
-        messagebox.showerror(           # Показываем окно ошибки
+        for dt in dt_values:
+            xs, ys, distance, height, speed = simulate_single(
+                m, Cd, rho, S, v0, angle_deg, dt
+            )
+
+            plt.plot(xs, ys, label=f"dt={dt}")
+
+            results_text += (
+                f"dt={dt} → "
+                f"Дальность: {round(distance,2)} м, "
+                f"Высота: {round(height,2)} м, "
+                f"Скорость: {round(speed,2)} м/с\n"
+            )
+
+        plt.xlabel("x (м)")
+        plt.ylabel("y (м)")
+        plt.title("Сравнение траекторий при разных шагах")
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+        result_label.config(text=results_text)
+
+    except:
+        messagebox.showerror(
             "Ошибка",
-            "Введите корректные числовые значения!"
+            "Введите корректные числовые значения!\n"
+            "Несколько dt вводите через запятую."
         )
 
 
-root = tk.Tk()                         
-root.title("Моделирование полета тела")  
+root = tk.Tk()
+root.title("Сравнение шагов метода Эйлера")
 
-
-
-tk.Label(root, text="Масса (кг)").grid(row=0, column=0)  
-entry_m = tk.Entry(root)                                 
-entry_m.insert(0, "1.0")                                  
-entry_m.grid(row=0, column=1)                             
+tk.Label(root, text="Масса (кг)").grid(row=0, column=0)
+entry_m = tk.Entry(root)
+entry_m.insert(0, "1.0")
+entry_m.grid(row=0, column=1)
 
 tk.Label(root, text="Cd").grid(row=1, column=0)
 entry_Cd = tk.Entry(root)
@@ -110,21 +119,14 @@ entry_angle = tk.Entry(root)
 entry_angle.insert(0, "45")
 entry_angle.grid(row=5, column=1)
 
-tk.Label(root, text="Шаг dt").grid(row=6, column=0)
+tk.Label(root, text="Шаги dt (через запятую)").grid(row=6, column=0)
 entry_dt = tk.Entry(root)
-entry_dt.insert(0, "0.01")
+entry_dt.insert(0, "1, 0.1, 0.01, 0.001")
 entry_dt.grid(row=6, column=1)
 
+tk.Button(root, text="Моделировать", command=simulate).grid(row=7, column=0, columnspan=2)
 
-tk.Button(
-    root,
-    text="Моделировать",
-    command=simulate           
-).grid(row=7, column=0, columnspan=2)
-
-
-result_label = tk.Label(root, text="")   
+result_label = tk.Label(root, text="", justify="left")
 result_label.grid(row=8, column=0, columnspan=2)
 
-
-root.mainloop()   
+root.mainloop()
