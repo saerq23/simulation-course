@@ -5,9 +5,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
 
-# ==========================
 # Метод прогонки (TDMA)
-# ==========================
 def thomas_algorithm(a, b, c, d):
     n = len(d)
     alpha = np.zeros(n)
@@ -31,24 +29,7 @@ def thomas_algorithm(a, b, c, d):
 
 
 # Решение уравнения
-def solve_heat():
-    try:
-        rho = float(entry_rho.get())
-        c = float(entry_c.get())
-        lam = float(entry_lam.get())
-        L = float(entry_L.get())
-
-        T_left = float(entry_T_left.get())
-        T_right = float(entry_T_right.get())
-        T0 = float(entry_T0.get())
-
-        dt = float(entry_dt.get())
-        dx = float(entry_dx.get())
-        t_end = float(entry_tend.get())
-    except:
-        result_label.config(text="Ошибка ввода параметров")
-        return
-
+def solve_heat(rho, c, lam, L, T_left, T_right, T0, dt, dx, t_end):
     nx = int(L / dx) + 1
     nt = int(t_end / dt)
 
@@ -80,19 +61,79 @@ def solve_heat():
 
         T = thomas_algorithm(a, b, c_, d)
 
-    # Температура в центре
-    T_center = T[nx // 2]
-    result_label.config(text=f"Температура в центре: {T_center:.4f} °C")
+    return x_vals, T, T[nx // 2]
 
-    # Обновление графика
+
+# Запуск одного расчёта (график)
+def run_single():
+    try:
+        rho = float(entry_rho.get())
+        c = float(entry_c.get())
+        lam = float(entry_lam.get())
+        L = float(entry_L.get())
+
+        T_left = float(entry_T_left.get())
+        T_right = float(entry_T_right.get())
+        T0 = float(entry_T0.get())
+
+        dt = float(entry_dt.get())
+        dx = float(entry_dx.get())
+        t_end = float(entry_tend.get())
+    except:
+        result_label.config(text="Ошибка ввода параметров")
+        return
+
+    x_vals, T, T_center = solve_heat(
+        rho, c, lam, L, T_left, T_right, T0, dt, dx, t_end
+    )
+
+    result_label.config(text=f"Температура в центре: {T_center:.6f} °C")
+
     ax.clear()
     ax.plot(x_vals, T)
     ax.set_xlabel("Координата x (м)")
     ax.set_ylabel("Температура (°C)")
     ax.set_title("Распределение температуры")
     ax.grid(True)
-
     canvas.draw()
+
+
+# Автоматический перебор шагов
+def run_table():
+    try:
+        rho = float(entry_rho.get())
+        c = float(entry_c.get())
+        lam = float(entry_lam.get())
+        L = float(entry_L.get())
+
+        T_left = float(entry_T_left.get())
+        T_right = float(entry_T_right.get())
+        T0 = float(entry_T0.get())
+
+        t_end = float(entry_tend.get())
+    except:
+        print("Ошибка ввода параметров")
+        return
+
+    steps = [0.1, 0.01, 0.001, 0.0001]
+
+    print("\nТаблица температур в центре (t = 2 сек)")
+    print("dt \\ dx | 0.1 | 0.01 | 0.001 | 0.0001")
+    print("-" * 50)
+
+    for dt in steps:
+        row = f"{dt:<7} | "
+        for dx in steps:
+            try:
+                _, _, T_center = solve_heat(
+                    rho, c, lam, L,
+                    T_left, T_right, T0,
+                    dt, dx, t_end
+                )
+                row += f"{T_center:8.4f} | "
+            except:
+                row += "  error  | "
+        print(row)
 
 
 # GUI
@@ -100,9 +141,9 @@ root = tk.Tk()
 root.title("Моделирование теплопроводности (МКР)")
 
 
-# ввод параметров
 frame_inputs = ttk.Frame(root)
 frame_inputs.pack(side=tk.LEFT, padx=10, pady=10)
+
 
 def add_input(label_text, default_value):
     ttk.Label(frame_inputs, text=label_text).pack()
@@ -112,26 +153,26 @@ def add_input(label_text, default_value):
     return entry
 
 
-entry_rho = add_input("Плотность ρ (кг/м³)", "7800")
-entry_c = add_input("Теплоемкость c (Дж/кг·°C)", "460")
-entry_lam = add_input("Теплопроводность λ (Вт/м·°C)", "46")
-entry_L = add_input("Длина пластины L (м)", "0.1")
+entry_rho = add_input("Плотность ρ", "7800")
+entry_c = add_input("Теплоемкость c", "460")
+entry_lam = add_input("Теплопроводность λ", "46")
+entry_L = add_input("Длина L (м)", "0.1")
 
-entry_T_left = add_input("Температура слева (°C)", "100")
-entry_T_right = add_input("Температура справа (°C)", "50")
-entry_T0 = add_input("Начальная температура (°C)", "20")
+entry_T_left = add_input("Температура слева", "100")
+entry_T_right = add_input("Температура справа", "50")
+entry_T0 = add_input("Начальная температура", "20")
 
-entry_dt = add_input("Шаг по времени dt (с)", "0.01")
-entry_dx = add_input("Шаг по пространству dx (м)", "0.001")
-entry_tend = add_input("Время моделирования (с)", "2.0")
+entry_dt = add_input("Шаг по времени dt", "0.01")
+entry_dx = add_input("Шаг по пространству dx", "0.001")
+entry_tend = add_input("Время моделирования", "2.0")
 
-ttk.Button(frame_inputs, text="Запустить моделирование", command=solve_heat).pack(pady=10)
+ttk.Button(frame_inputs, text="Построить график", command=run_single).pack(pady=5)
+ttk.Button(frame_inputs, text="Вывести таблицу в консоль", command=run_table).pack(pady=5)
 
-result_label = ttk.Label(frame_inputs, text="Температура в центре: ")
+result_label = ttk.Label(frame_inputs, text="")
 result_label.pack()
 
 
-# ----- График -----
 frame_plot = ttk.Frame(root)
 frame_plot.pack(side=tk.RIGHT, padx=10, pady=10)
 
