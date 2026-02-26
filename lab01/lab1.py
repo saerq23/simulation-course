@@ -5,19 +5,19 @@ from tkinter import messagebox
 
 
 def simulate_single(m, Cd, rho, S, v0, angle_deg, dt):
-    g = 9.81
-    k = Cd * rho * S / 2
-    angle = np.radians(angle_deg)
+    g = 9.81  # Ускорение свободного падения
+    k = Cd * rho * S / 2 # Коэффициент сопротивления среды
+    angle = np.radians(angle_deg) # Перевод угла из градусов в радианы
 
-    vx = v0 * np.cos(angle)
-    vy = v0 * np.sin(angle)
+    vx = v0 * np.cos(angle)  # Начальная скорость по оси X
+    vy = v0 * np.sin(angle)  # Начальная скорость по оси Y
 
     x, y = 0, 0
     xs, ys = [x], [y]
     max_height = 0
 
-    while y >= 0:
-        v = np.sqrt(vx**2 + vy**2)
+    while y >= 0: 
+        v = np.sqrt(vx**2 + vy**2) # Модуль полной скорости
 
         ax = -k/m * vx * v
         ay = -g - k/m * vy * v
