@@ -12,8 +12,10 @@ def thomas_algorithm(a, b, c, d):
     beta = np.zeros(n)
     x = np.zeros(n)
 
-    alpha[0] = -c[0] / b[0]
+    alpha[0] = -c[0] / b[0]  # Первый коэффициент (начало прогонки)
     beta[0] = d[0] / b[0]
+
+ # Прямая прогонка (движение слева направо)
 
     for i in range(1, n):
         denom = b[i] + a[i] * alpha[i - 1]
@@ -35,17 +37,17 @@ def solve_heat(rho, c, lam, L, T_left, T_right, T0, dt, dx, t_end):
 
     x_vals = np.linspace(0, L, nx)
 
-    T = np.ones(nx) * T0
+    T = np.ones(nx) * T0   # Начальное распределение температуры
     T[0] = T_left
     T[-1] = T_right
 
-    r = lam * dt / (rho * c * dx**2)
+    r = lam * dt / (rho * c * dx**2)  # Безразмерный коэффициент схемы
 
     for _ in range(nt):
         a = np.zeros(nx)
-        b = np.zeros(nx)
+        b = np.zeros(nx) # главная диагональ
         c_ = np.zeros(nx)
-        d = np.zeros(nx)
+        d = np.zeros(nx) # правая чаасть
 
         for i in range(1, nx - 1):
             a[i] = -r
