@@ -107,7 +107,7 @@ class ForestFire:
 
         for i in range(ROWS):
             for j in range(COLS):
-                state, tree_type = self.grid[i][j]
+                state, tree_type = self.grid[i][j] # состояние клетки
 
                 if state == EMPTY:
                     # Рост дерева
